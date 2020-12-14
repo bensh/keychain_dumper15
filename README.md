@@ -7,13 +7,15 @@ Forked copy of ptoomey3/Keychain-Dumper, lighter weight, less options to allow f
 New flags:
 
     -l: Lists all entitlement groups 
-    -f: Dumps Keychain items for provided group name
+    -f: Dumps Keychain items for provided group name via stdin
+    -f: [group_name]: Dumps Keychain items for inline group name
     
 *** Installation remains the same, and signing with entitlements.
 
 Tested on:
     iPhone 6 12.4.3
     iPhone 7 Plus 11.2.5
+    iPhone 11 13.0
 
 By default keychain_dumper only dumps "Generic" and "Internet" passwords.  This is generally what you are interested in, as most application passwords are stored as "Generic" or "Internet" passwords.  However, you can also pass optional flags to dump additional information from the Keychain.  If you run keychain_dumper with the `-h` option you will get the following usage string:
 
