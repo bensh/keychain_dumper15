@@ -8,7 +8,7 @@ New flags:
 
     -l: Lists all entitlement groups 
     -f: Dumps Keychain items for provided group name via stdin
-    -f: [group_name]: Dumps Keychain items for inline group name
+    -f [group_name]: Dumps Keychain items for inline group name
     
 *** Installation remains the same, and signing with entitlements.
 
