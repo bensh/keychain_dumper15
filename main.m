@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011, Neohapsis, Inc.
+ * Copyright (c) 2020
  * All rights reserved.
  *
- * Implementation by Patrick Toomey
+ * Main implmentation by Patrick Toomey
+ * Additional features -l, -f, -f [group_name] by bensh
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -148,7 +149,35 @@ void printUsage() {
   // printToStdOut(@"-k: Dump Keys\n");
   printToStdOut(@"-s: Dump Selected Entitlement Group\n");
   printToStdOut(@"-l: List All Entitlement Groups\n");
-  printToStdOut(@"-f: Dump Filtered Group\n");
+  printToStdOut(@"-f [group name]: Dump Filtered Group\n");
+}
+
+void listEntitlementsOnly() {
+  NSMutableArray *entitlementsArray = [[NSMutableArray alloc] init];
+  const char *dbpath = [databasePath UTF8String];
+  sqlite3 *keychainDB;
+  sqlite3_stmt *statement;
+  if (sqlite3_open(dbpath, &keychainDB) == SQLITE_OK) {
+    const char *query_list = "select distinct agrp from genp union select distinct agrp from inet union select distinct agrp from cert union select distinct agrp from keys;";
+    if (sqlite3_prepare_v2(keychainDB, query_list, -1, &statement, NULL) == SQLITE_OK) {
+     printToStdOut(@"%s[INFO] Listing available Entitlement Groups:\n%s", KGRN, KWHT);
+     while(sqlite3_step(statement) == SQLITE_ROW) {
+      NSString *group = [[NSString alloc] initWithUTF8String:(const char *) sqlite3_column_text(statement, 0)];
+      printToStdOut(@"Entitlement Group: %@\n", group);
+      [entitlementsArray addObject:group];
+      [group release];
+     }
+     sqlite3_finalize(statement);
+    }
+    else {
+     printToStdOut(@"%s[ERROR] Unknown error querying keychain database\n%s", KRED, KWHT);
+    }
+
+    sqlite3_close(keychainDB);
+  }
+  else {
+    printToStdOut(@"Unknown error opening keychain database\n");
+  }
 }
 
 void dumpKeychainEntitlements() {
@@ -163,7 +192,6 @@ void dumpKeychainEntitlements() {
    "\t\t<array>\n"];
   if (sqlite3_open(dbpath, &keychainDB) == SQLITE_OK) {
     const char *query_stmt = "select distinct agrp from genp union select distinct agrp from inet union select distinct agrp from cert union select distinct agrp from keys;";
-
     if (sqlite3_prepare_v2(keychainDB, query_stmt, -1, &statement, NULL) == SQLITE_OK) {
       while(sqlite3_step(statement) == SQLITE_ROW) {
         NSString *group = [[NSString alloc] initWithUTF8String:(const char *) sqlite3_column_text(statement, 0)];
@@ -231,48 +259,15 @@ return selectedEntitlement;
 }
 
 NSString *getGroupName() {
-  printToStdOut(@"%s[ACTION] Enter Group Name: %s", KGRN, KWHT);
+  printToStdOut(@"%s[ACTION] Enter Group Name: %s", KYEL, KWHT);
   char userSelection[50] = {0};
   scanf("%s", userSelection);
   //printToStdOut(@"%s[INFO] %s selected.\n%s", KYEL, userSelection, KWHT);
   NSString *selectedEntitlement = [NSString stringWithUTF8String:userSelection];
-  printToStdOut(@"%s[INFO] %@ selected.\n%s", KYEL, selectedEntitlement, KWHT);
+  printToStdOut(@"%s[INFO] %@ selected.\n%s", KGRN, selectedEntitlement, KWHT);
  return selectedEntitlement;
   }
 
-
-NSString *listEntitlementsOnly() {
-  NSMutableArray *entitlementsArray = [[NSMutableArray alloc] init];
-  const char *dbpath = [databasePath UTF8String];
-  sqlite3 *keychainDB;
-  sqlite3_stmt *statement;
-  if (sqlite3_open(dbpath, &keychainDB) == SQLITE_OK) {
-    const char *query_all = "select distinct agrp from genp union select distinct agrp from inet union select distinct agrp from cert union select distinct agrp from keys;";
-    if (sqlite3_prepare_v2(keychainDB, query_all, -1, &statement, NULL) == SQLITE_OK) {
-     printToStdOut(@"%s[INFO] Listing available Entitlement Groups:\n%s", KGRN, KWHT);
-     int index = 0;
-     while(sqlite3_step(statement) == SQLITE_ROW) {
-      NSString *group = [[NSString alloc] initWithUTF8String:(const char *) sqlite3_column_text(statement, 0)];
-      printToStdOut(@"Entitlement Group [%i]: %@\n",index, group);
-      [entitlementsArray addObject:group];
-      [group release];
-      index += 1;
-    }
-    sqlite3_finalize(statement);
-  }
-  else {
-    printToStdOut(@"%s[ERROR] Unknown error querying keychain database\n%s", KRED, KWHT);
-    return @"none";
-  }
-
-  sqlite3_close(keychainDB);
-}
-else {
-  printToStdOut(@"%s[ERROR] Unknown error opening keychain database\n%s", KRED, KWHT);
-  return @"none";
-}
-return 0;
-}
 
 NSMutableArray *getCommandLineOptions(int argc, char **argv) {
   NSMutableArray *arguments = [[NSMutableArray alloc] init];
@@ -282,10 +277,25 @@ NSMutableArray *getCommandLineOptions(int argc, char **argv) {
     [arguments addObject:(id)kSecClassInternetPassword];
     return [arguments autorelease];
   }
+  if (argc == 3) {
+    if(strcmp(argv[1],"-f")==0){
+     selectedEntitlementConstant=[NSString stringWithCString:argv[2] encoding:NSASCIIStringEncoding];
+     printToStdOut(@"Entitlement Group: %@\n",selectedEntitlementConstant);
+     printToStdOut(@"Args: %@\n",arguments);
+     [arguments addObject:(id)kSecClassGenericPassword];
+     [arguments addObject:(id)kSecClassInternetPassword];
+     [arguments addObject:(id)kSecClassIdentity];
+     [arguments addObject:(id)kSecClassCertificate];
+     [arguments addObject:(id)kSecClassKey];
+     return [arguments autorelease];
+    }
+  }
   while ((argument = getopt (argc, argv, "aegnickhslf")) != -1) {
     switch(argument) {
      case 'f':
      selectedEntitlementConstant = getGroupName();
+     printToStdOut(@"Args: %@\n",arguments);
+     printToStdOut(@"Entitlement Group: %@\n",selectedEntitlementConstant);
      [arguments addObject:(id)kSecClassGenericPassword];
      [arguments addObject:(id)kSecClassInternetPassword];
      [arguments addObject:(id)kSecClassIdentity];
@@ -293,7 +303,7 @@ NSMutableArray *getCommandLineOptions(int argc, char **argv) {
      [arguments addObject:(id)kSecClassKey];
      return [arguments autorelease];
      case 'l':
-     selectedEntitlementConstant = listEntitlementsOnly();
+     [arguments addObject:@"listEntitlements"];
      return [arguments autorelease];
      case 's':
      selectedEntitlementConstant = listEntitlements();
@@ -561,6 +571,9 @@ int main(int argc, char **argv) {
 	NSArray *passwordItems;
 	if ([arguments indexOfObject:@"dumpEntitlements"] != NSNotFound) {
     dumpKeychainEntitlements();
+    exit(EXIT_SUCCESS);
+  } else if ([arguments indexOfObject:@"listEntitlements"] != NSNotFound) {
+    listEntitlementsOnly();
     exit(EXIT_SUCCESS);
   }
   NSArray *keychainItems = nil;
