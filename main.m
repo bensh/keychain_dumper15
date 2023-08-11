@@ -142,11 +142,6 @@ void printUsage() {
   printToStdOut(@"<no flags>: Dump Password Keychain Items (Generic Password, Internet Passwords)\n");
   printToStdOut(@"-a: Dump All Keychain Items (Generic Passwords, Internet Passwords, Identities, Certificates, and Keys)\n");
   printToStdOut(@"-e: Dump Entitlements\n");
-  // printToStdOut(@"-g: Dump Generic Passwords\n");
-  // printToStdOut(@"-n: Dump Internet Passwords\n");
-  // printToStdOut(@"-i: Dump Identities\n");
-  // printToStdOut(@"-c: Dump Certificates\n");
-  // printToStdOut(@"-k: Dump Keys\n");
   printToStdOut(@"-s: Dump Selected Entitlement Group\n");
   printToStdOut(@"-l: List All Entitlement Groups\n");
   printToStdOut(@"-f [group name]: Dump Filtered Group\n");
@@ -290,7 +285,7 @@ NSMutableArray *getCommandLineOptions(int argc, char **argv) {
      return [arguments autorelease];
     }
   }
-  while ((argument = getopt (argc, argv, "aegnickhslf")) != -1) {
+  while ((argument = getopt (argc, argv, "aehslf")) != -1) {
     switch(argument) {
      case 'f':
      selectedEntitlementConstant = getGroupName();
@@ -323,20 +318,6 @@ NSMutableArray *getCommandLineOptions(int argc, char **argv) {
      case 'e':
      [arguments addObject:@"dumpEntitlements"];
      return [arguments autorelease];
-     // case 'g':
-     // [arguments addObject:(id)kSecClassGenericPassword];
-     // break;
-     // case 'n':
-     // [arguments addObject:(id)kSecClassInternetPassword];
-     // break;
-     // case 'i':
-     // [arguments addObject:(id)kSecClassIdentity];
-     // break;
-     // case 'c':
-     // [arguments addObject:(id)kSecClassCertificate];
-     // break;
-     // case 'k':
-     // [arguments addObject:(id)kSecClassKey];
      break;
      case 'h':
      printUsage();
