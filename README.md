@@ -2,7 +2,7 @@
 
 ## Usage
 
-Forked copy of ptoomey3/Keychain-Dumper, lighter weight, less options to allow for flexability and scripting.
+Forked copy of ptoomey3/Keychain-Dumper, lighter weight, less options to allow for flexability and scripting. Working for iOS15
 
 New flags:
 
