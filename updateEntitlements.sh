@@ -2,13 +2,23 @@
 #Original keychain_dumper by Patrick Toomey
 #Scrpt by @ReverseThatApp and @vocaeq
 
-KEYCHAIN_DUMPER_FOLDER=/usr/bin
+#Script built for palera1n/sileo/iOS 15 rootless jailbreaks
+if [ ! "sqlite3" ]; then
+  echo "sqlite3 does not exist" \
+       "Install via sileo/cydia and run the script again"
+  exit 1
+fi
+
+#KEYCHAIN_DUMPER_FOLDER=/usr/bin
+#KEYCHAIN DUMPER FOLDER for palera1n jailbreak ios 15
+KEYCHAIN_DUMPER_FOLDER=/var/jb/usr/bin
 if [ ! -d "$KEYCHAIN_DUMPER_FOLDER" ] ; then
   mkdir "$KEYCHAIN_DUMPER_FOLDER" ;
 fi
 
-if [ ! -f "$KEYCHAIN_DUMPER_FOLDER/keychain_dumper" ]; then
-  echo "The file \"$KEYCHAIN_DUMPER_FOLDER/keychain_dumper\" does not exist. " \
+
+if [ ! -f "$KEYCHAIN_DUMPER_FOLDER/keychain_dumper15" ]; then
+  echo "The file \"$KEYCHAIN_DUMPER_FOLDER/keychain_dumper15\" does not exist. " \
        "Move the binary into the folder \"$KEYCHAIN_DUMPER_FOLDER/\" and run the script again."
   exit 1
 fi
@@ -16,8 +26,10 @@ fi
 # set -e ;
 
 ENTITLEMENT_PATH=$KEYCHAIN_DUMPER_FOLDER/ent.xml
+
 dbKeychainArray=()
-declare -a invalidKeychainArray=("com.apple.bluetooth"
+declare -a invalidKeychainArray=(
+        "com.apple.bluetooth"
         "com.apple.cfnetwork"
         "com.apple.cloudd"
         "com.apple.continuity.encryption"
@@ -32,6 +44,15 @@ declare -a invalidKeychainArray=("com.apple.bluetooth"
         "com.apple.telephonyutilities.callservicesd"
         "ichat"
         "wifianalyticsd"
+        "com.apple.apsd"
+        "com.apple.sharing.appleidauthentication"
+        "com.apple.Spotlight"
+        "com.apple.TextInput"
+        "com.apple.PassbookUIService"
+        "com.apple.ProtectedCloudStorage"
+        "com.apple.assistant"
+        "com.apple.networkserviceproxy"
+        "group.com.apple.notes"
       )
 
 echo "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" > $ENTITLEMENT_PATH
@@ -50,8 +71,8 @@ while IFS= read -r line; do
   dbKeychainArray+=("$line")
     if [[ ! " ${invalidKeychainArray[@]} " =~ " ${line} " ]]; then
       echo "      <string>${line}</string>">> $ENTITLEMENT_PATH
-  else
-    echo "Skipping ${line}"
+  #else
+    #echo "Skipping ${line}"
   fi
 done < ./allgroups.txt
 
@@ -64,7 +85,16 @@ echo "    <key>com.apple.private.security.no-container</key>  <true/>">> $ENTITL
 echo "  </dict>">> $ENTITLEMENT_PATH
 echo "</plist>">> $ENTITLEMENT_PATH
 
-cd $KEYCHAIN_DUMPER_FOLDER
-ldid -Sent.xml keychain_dumper
-rm ent.xml
-echo "Entitlements updated"
+
+count=$(grep -c '<string>.*</string>' "$ENTITLEMENT_PATH")
+if [ $count -gt 36 ]; then
+ echo "[WARN] You have:$count in your entitlement file. Please delete some and run again"
+ exit 1
+else
+ echo "[INFO] You have:$count lines in your entitlement file. Updating ent's"
+ cd $KEYCHAIN_DUMPER_FOLDER
+ ldid -Sent.xml keychain_dumper15
+echo "[INFO] Entitlements updated"
+fi
+
+
